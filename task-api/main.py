@@ -1,5 +1,5 @@
 from fastapi import FastAPI , HTTPException , Body , Response
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 app = FastAPI(title="Task API" , version="1.0")
 
@@ -74,4 +74,16 @@ def delete_task(id:int):
         status_code=404,
         detail="Unkown ID"
     )
+
+# Extras
+@app.get("/filter_tasks" , summary="Filter Task")
+def get_filtered_tasks(done:bool):
+    print(done)
+    filtered_tasks = [task for task in tasks if task["done"]==done]
+    return filtered_tasks
+
+@app.get("/stats" , summary="Get statistics")
+def get_stats():
+    done_count = len([task for task in tasks if task['done']==True])
+    return { "total": len(tasks), "done": done_count, "open": len(tasks) - done_count }
     
