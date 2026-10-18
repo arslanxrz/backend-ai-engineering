@@ -1,7 +1,7 @@
 from fastapi import FastAPI , HTTPException , Body , Response
 from pydantic import BaseModel
 
-app = FastAPI()
+app = FastAPI(title="Task API" , version="1.0")
 
 tasks = [
     {"id" : 1 , "title":"Buy milk" , "done":False},
@@ -14,20 +14,20 @@ class task_val(BaseModel):
     done : bool | None = None
 
 
-@app.get("/")
+@app.get("/" , summary="API info" , description="Returns the name, version and main endpoints of this API.")
 async def root():
     return { "name": "Task API", "version": "1.0", "endpoints": ["/tasks"] }
 
-@app.get("/health")
+@app.get("/health" , summary="Health check" , description="Returns status ok if the server is alive.")
 async def health():
     return {"status":"ok"}
 
-@app.get("/tasks")
+@app.get("/tasks" , summary="List all tasks" , description="Returns every task in the in-memory list.")
 def get_tasks():
     return tasks
 
 
-@app.get("/tasks/{id}")
+@app.get("/tasks/{id}" , summary="Get one task" , description="Return one task with the given id")
 def get_task_by_id(id:int):
     for task in tasks:
         if(task["id"]==id):
@@ -37,7 +37,7 @@ def get_task_by_id(id:int):
         detail={ "error": "Task 99 not found" }
     )
 
-@app.post("/tasks" , status_code=201)
+@app.post("/tasks" , status_code=201 , summary="create a task" , description="Creates a tasks from the JSON body with a title")
 def create_task(title:str = Body(..., embed=True)):
     if not title or title.strip()=="":
         raise HTTPException(
@@ -49,7 +49,7 @@ def create_task(title:str = Body(..., embed=True)):
     tasks.append(task)
     return task
 
-@app.put("/tasks/{id}")
+@app.put("/tasks/{id}" , summary="Update a task" , description="Changes the title and/or the done status of the task")
 def update_task(id:int , update_data : task_val):
     unknown_id = id not in [task["id"] for task in tasks]
     if unknown_id:
@@ -64,7 +64,7 @@ def update_task(id:int , update_data : task_val):
     task.update(updated_data)
     return task
 
-@app.delete("/tasks/{id}" , status_code=204)
+@app.delete("/tasks/{id}" , status_code=204, summary="Delete a task" , description="Removes the task with the given ID")
 def delete_task(id:int):
     for task in tasks:
         if task['id']==id:
