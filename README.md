@@ -1,4 +1,4 @@
-# FlyRank Backend Internship
+# FlyRank Internship, Backend AI Engineering    Track
 
 Assignments for the FlyRank Internship, Backend Track. Language: **Python**.
 
@@ -10,7 +10,7 @@ Assignments for the FlyRank Internship, Backend Track. Language: **Python**.
 | A1 | Build a CRUD API (FastAPI, in-memory) | [task-api](./task-api) | Done |
 
 ALl the assignments are one project that grows each week, so they share the
-`task-api` folder. Each assignment's state is tagged in Git
+`task-api` folder. Each assignment's state will be tagged in Git as
 (`a1-submission`, `a2-submission`, ...).
 
 ## How to run a project
