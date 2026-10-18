@@ -15,24 +15,31 @@ pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
-## Table of all the endpoints
+## Table of All Endpoints
 
-| Endpoint | summary | description |
 
-| --- | --- | --- |
-| / | API info | Returns the name, version and main endpoints of this API. |
-| /health | Health check | Returns status ok if the server is alive. |
-| /tasks | List all tasks | Returns every task in the in-memory list. |
-| /tasks/{id} | Get one task | Return one task with the given id |
-| /tasks | create a task | Creates a tasks from the JSON body with a title |
-| /tasks/{id} | Update a task | Changes the title and/or the done status of the task |
-| /tasks/{id} | Delete a task | Removes the task with the given ID |
+| Method | Endpoint                 | Summary         | Description                                                  |
+| ------ | ------------------------ | --------------- | ------------------------------------------------------------ |
+| GET    | `/`                      | API Info        | Returns the API name, version, and main endpoint.            |
+| GET    | `/health`                | Health Check    | Returns the status of the server.                            |
+| GET    | `/tasks`                 | List All Tasks  | Returns all tasks from the in-memory list.                   |
+| GET    | `/tasks/{id}`            | Get One Task    | Returns a task with the specified ID.                        |
+| POST   | `/tasks`                 | Create a Task   | Creates a new task using the JSON request body.              |
+| PUT    | `/tasks/{id}`            | Update a Task   | Updates the title and completion status of an existing task. |
+| DELETE | `/tasks/{id}`            | Delete a Task   | Deletes the task with the specified ID.                      |
+| GET    | `/filter_task?done=true` | Filter Tasks    | Returns tasks filtered by their completion status.           |
+| GET    | `/stats`                 | Task Statistics | Returns the total, completed, and pending task counts.       |
+
+
+
 
 ## curl -i output
 
+
+
 ### Command
 
-curl -i http://localhost:8000/
+curl -i [http://localhost:8000/](http://localhost:8000/)
 
 ### output
 
@@ -46,6 +53,38 @@ content-type: application/json
 
 ## Swagger UI
 
-Interactive docs are available at http://localhost:8000/docs.
+Interactive docs are available at [http://localhost:8000/docs](http://localhost:8000/docs).
 
 ![Swagger UI](screenshots/swagger.png)
+
+## AI vs me
+
+
+
+### My prompt
+
+Build a full CRUD REST API using Python and FastAPI with an in-memory tasks list containing three initial records (id, title, done) defined at the top of the file. Include GET /, GET /health, GET /tasks, GET /tasks/{id}, POST /tasks, PUT /tasks/{id}, DELETE /tasks/{id}, GET /filter_task?done=true|false, and GET /stats. Use appropriate HTTP status codes (200, 201, 400, 404), validate inputs, handle errors, and provide complete runnable code plus installation, startup, and testing instructions.
+
+### Results
+
+
+| Check                     | Mine | AI                  |
+| ------------------------- | ---- | ------------------- |
+| GET /tasks/99 returns 404 | pass | pass                |
+| POST {} returns 400       | pass | fail (returned 422) |
+| DELETE returns 204        | pass | pass                |
+
+
+
+
+### 1. What did the AI do better?
+
+The AI handled empty request bodies in the POST endpoint better than my code by returning the appropriate status code. It also improved code reusability by creating helper functions to avoid repeating logic.
+
+### 2. What did it get wrong or quietly ignore?
+
+The AI changed FastAPI’s default validation status code from 422 to 400 as requested, but it used a general error message instead of explaining which field was invalid.
+
+### 3. What did my prompt forget to specify?
+
+My prompt did not specify the exact validation rules for task fields, whether PUT should update all fields or allow partial updates, or the format of error message.

@@ -4,8 +4,7 @@ Assignments for the FlyRank Internship, Backend Track. Language: **Python**.
 
 ## Assignments
 
-| Assignment | Topic | Folder | Status |
-
+| ID | Task | Folder | Status |
 |---|---|---|---|
 | A1 | Build a CRUD API (FastAPI, in-memory) | [task-api](./task-api) | Done |
 
