@@ -49,3 +49,26 @@ content-type: application/json
 Interactive docs are available at http://localhost:8000/docs.
 
 ![Swagger UI](screenshots/swagger.png)
+
+## AI vs me
+
+### My prompt
+
+Build a full CRUD REST API using Python and FastAPI with an in-memory tasks list containing three initial records (id, title, done) defined at the top of the file. Include GET /, GET /health, GET /tasks, GET /tasks/{id}, POST /tasks, PUT /tasks/{id}, DELETE /tasks/{id}, GET /filter_task?done=true|false, and GET /stats. Use appropriate HTTP status codes (200, 201, 400, 404), validate inputs, handle errors, and provide complete runnable code plus installation, startup, and testing instructions.
+(paste your full prompt here)
+
+### Results
+| Check | Mine | AI |
+|---|---|---|
+| GET /tasks/99 returns 404 | pass | pass |
+| POST {} returns 400 | pass | fail (returned 422) |
+| DELETE returns 204 | pass | pass |
+
+### 1. What did the AI do better?
+The AI handled empty request bodies in the POST endpoint better than my code by returning the appropriate status code. It also improved code reusability by creating helper functions to avoid repeating logic.
+
+### 2. What did it get wrong or quietly ignore?
+The AI changed FastAPI’s default validation status code from 422 to 400 as requested, but it used a general error message instead of explaining which field was invalid.
+
+### 3. What did my prompt forget to specify?
+My prompt did not specify the exact validation rules for task fields, whether PUT should update all fields or allow partial updates, or the format of error message.
