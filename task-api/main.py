@@ -1,7 +1,10 @@
 from fastapi import FastAPI , HTTPException , Body , Response
 from pydantic import BaseModel, field_validator
+import sqlite3
 
 app = FastAPI(title="Task API" , version="1.0")
+
+DATABASE_NAME = "tasks.db"
 
 tasks = [
     {"id" : 1 , "title":"Buy milk" , "done":False},
@@ -12,6 +15,44 @@ tasks = [
 class task_val(BaseModel):
     title : str | None = None
     done : bool | None = None
+
+def get_db():
+    """Connect to sqlite database"""
+    conn = sqlite3.connect(DATABASE_NAME , check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+def init_db():
+    with sqlite3.connect(DATABASE_NAME) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tasks(
+        id INTEGER PRIMARY KEY,
+        title TEXT,
+        done INTEGER NOT NULL DEFAULT 0 CHECK (done IN (0, 1))
+        )
+        """)
+
+        cursor.execute("select COUNT(*) from tasks")
+        row_count = cursor.fetchone()[0]
+        if row_count==0:
+            example_tasks = [
+                (1 , "Buy milk" , 0),
+                (2 , "Water the plants" , 1),
+                (3 , "Backup files" , 0)
+            ]
+            cursor.executemany("INSERT INTO tasks(id , title , done) VALUES (?,?,?)",example_tasks)
+            conn.commit()
+            print("Database seeded with 3 example")
+        else:
+            print("Table already has data. Skiping seeding.")
+
+
+init_db()
 
 
 @app.get("/" , summary="API info" , description="Returns the name, version and main endpoints of this API.")
