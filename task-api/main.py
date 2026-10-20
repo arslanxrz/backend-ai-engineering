@@ -1,4 +1,4 @@
-from fastapi import FastAPI , HTTPException , Body , Response
+from fastapi import FastAPI , HTTPException , Body , Response , Depends
 from pydantic import BaseModel, field_validator
 import sqlite3
 
@@ -64,15 +64,22 @@ async def health():
     return {"status":"ok"}
 
 @app.get("/tasks" , summary="List all tasks" , description="Returns every task in the in-memory list.")
-def get_tasks():
-    return tasks
+def get_tasks(db:sqlite3.Connection = Depends(get_db)):
+    cursor = db.cursor()
+    cursor.execute("SELECT * from tasks")
+
+    rows = cursor.fetchall()
+    return rows
 
 
 @app.get("/tasks/{id}" , summary="Get one task" , description="Return one task with the given id")
-def get_task_by_id(id:int):
-    for task in tasks:
-        if(task["id"]==id):
-            return task
+def get_task_by_id(id:int , db:sqlite3.Connection = Depends(get_db)):
+    cursor = db.cursor()
+    cursor.execute("SELECT * from tasks where id = ?" , (id,))
+
+    row = cursor.fetchone()
+    if row:
+        return row
     raise HTTPException(
         status_code=404,
         detail={ "error": "Task 99 not found" }
