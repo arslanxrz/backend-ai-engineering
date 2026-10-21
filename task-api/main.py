@@ -1,8 +1,17 @@
 from fastapi import FastAPI , HTTPException , Body , Response , Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, field_validator
 import sqlite3
 
 app = FastAPI(title="Task API" , version="1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],           # Allowed domains
+    allow_credentials=True,         # Allow cookies and authentication headers
+    allow_methods=["*"],             # Allow all HTTP methods (GET, POST, etc.)
+    allow_headers=["*"],             # Allow all request headers
+)
 
 DATABASE_NAME = "tasks.db"
 
@@ -101,30 +110,45 @@ def create_task(title:str = Body(default=None, embed=True) , db:sqlite3.Connecti
 
 
 @app.put("/tasks/{id}" , summary="Update a task" , description="Changes the title and/or the done status of the task")
-def update_task(id:int , update_data : task_val):
-    unknown_id = id not in [task["id"] for task in tasks]
-    if unknown_id:
+def update_task(id:int , update_data : task_val , db:sqlite3.Connection = Depends(get_db)):
+
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM tasks where id = ?", (id,))
+    task = cursor.fetchone()
+    if task is None:
         raise HTTPException(
             status_code=404,
             detail="Unknown ID"
         )
-    task = tasks[id-1]
-    updated_data = update_data.model_dump(exclude_none=True)
-    if not updated_data:
+
+    data = update_data.model_dump(exclude_unset=True)
+    if not data:
         raise HTTPException(status_code=400, detail="Empty request body. Provide at least one field to update.")
-    task.update(updated_data)
+    
+    fields = ", ".join(f"{key} = ?" for key in data)
+    values = list(data.values())
+    values.append(id)
+    cursor.execute(f"UPDATE tasks SET {fields} WHERE id = ?", values)
+
+    db.commit()
+
+    cursor.execute("SELECT * FROM tasks where id = ?", (id,))
+    task = cursor.fetchone()
     return task
 
 @app.delete("/tasks/{id}" , status_code=204, summary="Delete a task" , description="Removes the task with the given ID")
-def delete_task(id:int):
-    for task in tasks:
-        if task['id']==id:
-            tasks.remove(task)
-            return 
-    raise HTTPException(
-        status_code=404,
-        detail="Unkown ID"
-    )
+def delete_task(id:int , db:sqlite3.Connection = Depends(get_db)):
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM tasks where id = ?", (id,))
+    task = cursor.fetchone()
+    if task is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Unknown ID"
+        )
+    cursor.execute("DELETE FROM tasks WHERE id = ?" , (id,))
+    db.commit()
+    return 
 
 # Extras
 @app.get("/filter_tasks" , summary="Filter Task")
