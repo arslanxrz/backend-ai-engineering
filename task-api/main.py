@@ -31,7 +31,7 @@ def init_db():
         cursor = conn.cursor()
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS tasks(
-        id INTEGER PRIMARY KEY,
+        id INTEGER AUTO_INCREMENT PRIMARY KEY,
         title TEXT,
         done INTEGER NOT NULL DEFAULT 0 CHECK (done IN (0, 1))
         )
@@ -85,17 +85,20 @@ def get_task_by_id(id:int , db:sqlite3.Connection = Depends(get_db)):
         detail={ "error": "Task 99 not found" }
     )
 
-@app.post("/tasks" , status_code=201 , summary="create a task" , description="Creates a tasks from the JSON body with a title")
-def create_task(title:str = Body(..., embed=True)):
+@app.post("/tasks" , status_code=201 , summary="create a task" , description="Creates a tasks with a title")
+def create_task(title:str = Body(default=None, embed=True) , db:sqlite3.Connection=Depends(get_db)):
+    cursor = db.cursor()
     if not title or title.strip()=="":
         raise HTTPException(
             status_code=400,
             detail={"error":"what's wrong"}
         )
-    id = tasks[-1]['id']+1 if tasks else 1
-    task = {"id":id , "title":title , "done":False}
-    tasks.append(task)
-    return task
+    
+    cursor.execute("INSERT INTO tasks (title, done) VALUES (?, ?)",(title , 0))
+    db.commit()
+    row_id = cursor.lastrowid
+    return {"id":row_id , "title":title , "done":0}
+
 
 @app.put("/tasks/{id}" , summary="Update a task" , description="Changes the title and/or the done status of the task")
 def update_task(id:int , update_data : task_val):
