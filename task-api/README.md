@@ -88,3 +88,7 @@ The AI changed FastAPI’s default validation status code from 422 to 400 as req
 ### 3. What did my prompt forget to specify?
 
 My prompt did not specify the exact validation rules for task fields, whether PUT should update all fields or allow partial updates, or the format of error message.
+
+## DATABASE
+* **Query:** `SELECT COUNT(*) FROM TASKS WHERE DONE = 0;`
+* **Result:** This query returned a count of 2, indicating there are currently two incomplete tasks.
