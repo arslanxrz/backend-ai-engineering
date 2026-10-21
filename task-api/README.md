@@ -92,3 +92,15 @@ My prompt did not specify the exact validation rules for task fields, whether PU
 ## DATABASE
 * **Query:** `SELECT COUNT(*) FROM TASKS WHERE DONE = 0;`
 * **Result:** This query returned a count of 2, indicating there are currently two incomplete tasks.
+
+### 1. Why SQLite was chosen?
+
+**SQLite** was chosen because It is lightweight database requires zero setup or external server configuration. Key advantages include:
+* **single-Filed Storage:** The entire database is contained within a single file on disk, making it highly portable.
+* **Persistence:** Unlike in-memory data stores, it fully **survives system restarts** and application crashes without losing data.
+* **Serverless Efficiency:** There are no complex background services or database engines to install, configure, or maintain.
+
+
+## DB Browser screenshot
+
+![DB Browswe](screenshots/db_browser.png)
