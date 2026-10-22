@@ -57,10 +57,7 @@ Interactive docs are available at [http://localhost:8000/docs](http://localhost:
 
 ![Swagger UI](screenshots/swagger.png)
 
-## AI vs me
-
-
-
+## A1: AI vs me
 ### My prompt
 
 Build a full CRUD REST API using Python and FastAPI with an in-memory tasks list containing three initial records (id, title, done) defined at the top of the file. Include GET /, GET /health, GET /tasks, GET /tasks/{id}, POST /tasks, PUT /tasks/{id}, DELETE /tasks/{id}, GET /filter_task?done=true|false, and GET /stats. Use appropriate HTTP status codes (200, 201, 400, 404), validate inputs, handle errors, and provide complete runnable code plus installation, startup, and testing instructions.
@@ -88,6 +85,23 @@ The AI changed FastAPI’s default validation status code from 422 to 400 as req
 ### 3. What did my prompt forget to specify?
 
 My prompt did not specify the exact validation rules for task fields, whether PUT should update all fields or allow partial updates, or the format of error message.
+
+
+## A2: AI vs me
+### My prompt
+Create a FastAPI Task CRUD API using SQLite. Create the tasks table if it doesn't exist and insert three default tasks only when the table is empty. Implement endpoints to create, read, update, delete, filter tasks by completion status, and get task statistics. Include API information and a health check endpoint. Return 400 for invalid requests and 404 when a task is not found. Use parameterized SQL queries for safety and ensure data persists after restarting the application.
+
+### 1. What did the AI do better?
+
+The AI improved code readability and organized database operations more clearly. However, my original code already used parameterized queries, seeded tasks only when the table was empty, and supported partial updates. The main benefit was cleaner structure, not new functionality.
+
+### 2. What did it get wrong or quietly ignore?
+
+It could change response formats, error messages, or status codes. Dynamically generated SQL also needed careful handling.
+
+### 3. What did my prompt forget to specify?
+
+I did not specify the exact schema, response formats, or update rules. The AI made its own decisions about these details.
 
 ## DATABASE
 * **Query:** `SELECT COUNT(*) FROM TASKS WHERE DONE = 0;`
