@@ -7,10 +7,10 @@ app = FastAPI(title="Task API" , version="1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],           # Allowed domains
-    allow_credentials=True,         # Allow cookies and authentication headers
-    allow_methods=["*"],             # Allow all HTTP methods (GET, POST, etc.)
-    allow_headers=["*"],             # Allow all request headers
+    allow_origins=["*"],           
+    allow_credentials=True,         
+    allow_methods=["*"],             
+    allow_headers=["*"],             
 )
 
 DATABASE_NAME = "tasks.db"
@@ -27,7 +27,7 @@ class task_val(BaseModel):
 
 def get_db():
     """Connect to sqlite database"""
-    conn = sqlite3.connect(DATABASE_NAME , check_same_thread=False)
+    conn = sqlite3.connect(DATABASE_NAME , check_same_thread=False , timeout=30)
     conn.row_factory = sqlite3.Row
 
     try:
@@ -36,11 +36,11 @@ def get_db():
         conn.close()
 
 def init_db():
-    with sqlite3.connect(DATABASE_NAME) as conn:
+    with sqlite3.connect(DATABASE_NAME, timeout=30) as conn:
         cursor = conn.cursor()
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS tasks(
-        id INTEGER AUTO_INCREMENT PRIMARY KEY,
+        id INTEGER PRIMARY KEY,
         title TEXT,
         done INTEGER NOT NULL DEFAULT 0 CHECK (done IN (0, 1))
         )
@@ -91,7 +91,7 @@ def get_task_by_id(id:int , db:sqlite3.Connection = Depends(get_db)):
         return row
     raise HTTPException(
         status_code=404,
-        detail={ "error": "Task 99 not found" }
+        detail={ "error": f"Task {id} not found" }
     )
 
 @app.post("/tasks" , status_code=201 , summary="create a task" , description="Creates a tasks with a title")
@@ -151,14 +151,43 @@ def delete_task(id:int , db:sqlite3.Connection = Depends(get_db)):
     return 
 
 # Extras
+
+@app.get("/search_tasks",summary="Search tasks using keyword")
+def search_tasks(search:str , db:sqlite3.Connection = Depends(get_db)):
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM tasks WHERE title LIKE ?" , (f"%{search}%",))
+    searched_task = cursor.fetchall()
+    if not searched_task:
+        raise HTTPException(status_code=404 , detail="No tasks found matching the keyword")
+    return searched_task
+
 @app.get("/filter_tasks" , summary="Filter Task")
-def get_filtered_tasks(done:bool):
-    print(done)
-    filtered_tasks = [task for task in tasks if task["done"]==done]
-    return filtered_tasks
+def get_filtered_tasks(done:int , db:sqlite3.Connection=Depends(get_db)):
+
+    cursor = db.cursor()
+    cursor.execute("SELECT * from tasks where done = ?" , (done,))
+    filtered_task = cursor.fetchall()
+    if not filtered_task:
+        raise HTTPException(status_code=404 , detail="No tasks exist")
+    return filtered_task
+
+@app.get("/sort_tasks")
+def get_sorted_tasks(db:sqlite3.Connection=Depends(get_db)):
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM tasks ORDER BY title")
+    sorted_task = cursor.fetchall()
+    if not sorted_task:
+        raise HTTPException(status_code=404 , detail="No tasks exist")
+    return sorted_task
+
 
 @app.get("/stats" , summary="Get statistics")
-def get_stats():
-    done_count = len([task for task in tasks if task['done']==True])
-    return { "total": len(tasks), "done": done_count, "open": len(tasks) - done_count }
+def get_stats(db:sqlite3.Connection=Depends(get_db)):
+    cursor = db.cursor()
+    cursor.execute("SELECT COUNT(*) from tasks")
+    count = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) from tasks where done = 1")
+    done_count = cursor.fetchone()[0]
+    return { "total": count, "done": done_count, "open": count - done_count }
     
