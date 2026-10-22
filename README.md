@@ -22,4 +22,4 @@ Start with `task-api/README.md`.
 
 ## Author
 
-ARSLAN RAZA, [[https://github.com/arslanxrz]](https://github.com/arslanxrz])
+ARSLAN RAZA, [https://github.com/arslanxrz](https://github.com/arslanxrz)
