@@ -39,7 +39,9 @@ uvicorn main:app --reload
 
 ### Command
 
-curl -i [http://localhost:8000/](http://localhost:8000/)
+```bash
+curl -i http://localhost:8000/
+```
 
 ### output
 
