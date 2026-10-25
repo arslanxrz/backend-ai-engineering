@@ -13,3 +13,10 @@ __pycache__/
 Thumbs.db
 .vscode/
 .idea/
+
+venv/
+__pycache__/
+node_modules/
+
+# Database file 
+tasks.db

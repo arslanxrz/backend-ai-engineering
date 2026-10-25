@@ -120,3 +120,31 @@ I did not specify the exact schema, response formats, or update rules. The AI ma
 ## DB Browser screenshot
 
 ![DB Browswe](screenshots/db_browser.png)
+
+## Database (PostgreSQL in Docker)
+
+The API runs against a PostgreSQL database in a Docker container.
+
+Start Postgres:
+
+```bash
+docker run --name taskdb -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=tasks -p 5432:5432 -v taskdata:/var/lib/postgresql -d postgres
+```
+
+| Part | Meaning |
+|---|---|
+| `--name taskdb` | Name of the container |
+| `-e POSTGRES_PASSWORD=dev` | Password for the `postgres` user |
+| `-e POSTGRES_DB=tasks` | Creates a database called `tasks` |
+| `-p 5432:5432` | Makes the database reachable at `localhost:5432` |
+| `-v taskdata:/var/lib/postgresql` | Named volume so data survives container restarts |
+| `-d` | Runs in the background (detach mode) |
+
+Check that it is running:
+
+```bash
+docker ps
+docker exec -it taskdb psql -U postgres -d tasks
+```
+
+Inside `psql`, `\dt` lists tables (none yet) and `\q` quits.
