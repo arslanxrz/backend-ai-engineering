@@ -1,9 +1,0 @@
-# Secrets
-.env
-
-# Database file 
-tasks.db
-
-# Python
-venv/
-__pycache__/
