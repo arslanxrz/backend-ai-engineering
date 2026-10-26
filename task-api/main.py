@@ -1,9 +1,17 @@
+from pickle import FALSE, TRUE
 from fastapi import FastAPI , HTTPException , Body , Response , Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, field_validator
 import sqlite3
+import psycopg
+from psycopg.rows import dict_row
+from dotenv import load_dotenv
+import os
 
 app = FastAPI(title="Task API" , version="1.0")
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 app.add_middleware(
     CORSMiddleware,
@@ -13,22 +21,13 @@ app.add_middleware(
     allow_headers=["*"],             
 )
 
-DATABASE_NAME = "tasks.db"
-
-tasks = [
-    {"id" : 1 , "title":"Buy milk" , "done":False},
-    {"id" : 2 , "title":"Water the plants" , "done":True},
-    {"id" : 3 , "title":"Backup files" , "done":False}
-]
-
 class task_val(BaseModel):
     title : str | None = None
-    done : bool | None = None
+    done : bool | None = None 
 
 def get_db():
     """Connect to sqlite database"""
-    conn = sqlite3.connect(DATABASE_NAME , check_same_thread=False , timeout=30)
-    conn.row_factory = sqlite3.Row
+    conn = psycopg.connect(DATABASE_URL , row_factory=dict_row)
 
     try:
         yield conn
@@ -36,13 +35,13 @@ def get_db():
         conn.close()
 
 def init_db():
-    with sqlite3.connect(DATABASE_NAME, timeout=30) as conn:
+    with psycopg.connect(DATABASE_URL) as conn:
         cursor = conn.cursor()
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS tasks(
         id INTEGER PRIMARY KEY,
         title TEXT,
-        done INTEGER NOT NULL DEFAULT 0 CHECK (done IN (0, 1))
+        done BOOLEAN NOT NULL DEFAULT FALSE
         )
         """)
 
@@ -50,11 +49,11 @@ def init_db():
         row_count = cursor.fetchone()[0]
         if row_count==0:
             example_tasks = [
-                (1 , "Buy milk" , 0),
-                (2 , "Water the plants" , 1),
-                (3 , "Backup files" , 0)
+                (1 , "Buy milk" , False),
+                (2 , "Water the plants" , True),
+                (3 , "Backup files" , False)
             ]
-            cursor.executemany("INSERT INTO tasks(id , title , done) VALUES (?,?,?)",example_tasks)
+            cursor.executemany("INSERT INTO tasks(id , title , done) VALUES (%s,%s,%s)",example_tasks)
             conn.commit()
             print("Database seeded with 3 example")
         else:
