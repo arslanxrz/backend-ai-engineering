@@ -26,7 +26,7 @@ class task_val(BaseModel):
     done : bool | None = None 
 
 def get_db():
-    """Connect to sqlite database"""
+    """Connect to database"""
     conn = psycopg.connect(DATABASE_URL , row_factory=dict_row)
 
     try:
@@ -72,7 +72,7 @@ async def health():
     return {"status":"ok"}
 
 @app.get("/tasks" , summary="List all tasks" , description="Returns every task in the in-memory list.")
-def get_tasks(db:sqlite3.Connection = Depends(get_db)):
+def get_tasks(db:psycopg.Connection = Depends(get_db)):
     cursor = db.cursor()
     cursor.execute("SELECT * from tasks")
 
@@ -81,9 +81,9 @@ def get_tasks(db:sqlite3.Connection = Depends(get_db)):
 
 
 @app.get("/tasks/{id}" , summary="Get one task" , description="Return one task with the given id")
-def get_task_by_id(id:int , db:sqlite3.Connection = Depends(get_db)):
+def get_task_by_id(id:int , db:psycopg.Connection = Depends(get_db)):
     cursor = db.cursor()
-    cursor.execute("SELECT * from tasks where id = ?" , (id,))
+    cursor.execute("SELECT * from tasks where id = %s" , (id,))
 
     row = cursor.fetchone()
     if row:
