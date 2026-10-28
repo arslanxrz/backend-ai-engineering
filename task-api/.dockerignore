@@ -1,0 +1,6 @@
+.env
+backenv/
+__pycache__/
+*.pyc
+tasks.db
+.git
