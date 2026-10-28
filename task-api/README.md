@@ -121,6 +121,7 @@ I did not specify the exact schema, response formats, or update rules. The AI ma
 
 ![DB Browswe](screenshots/db_browser.png)
 
+
 ## Database (PostgreSQL in Docker)
 
 The API runs against a PostgreSQL database in a Docker container.
@@ -148,3 +149,75 @@ docker exec -it taskdb psql -U postgres -d tasks
 ```
 
 Inside `psql`, `\dt` lists tables (none yet) and `\q` quits.
+
+## Run with Docker (one command)
+
+This project runs as two containers: the FastAPI app (`api`) and a PostgreSQL database (`db`).
+
+```bash
+docker compose up --build
+```
+
+The API is then available at http://localhost:8000, with Swagger UI at http://localhost:8000/docs.
+
+To stop everything, run `docker compose down`. Your data is kept in a Docker volume, so it survives a `down` and `up`. To wipe the data as well, run `docker compose down -v`.
+
+## Environment variables
+
+Copy `.env.example` to `.env` before starting. `.env` is git-ignored and must never be committed.
+
+| Variable | Meaning | Example |
+|---|---|---|
+| `DATABASE_URL` | Connection string to Postgres | `postgresql://postgres:<password>@db:5432/tasks` |
+| `POSTGRES_PASSWORD` | Password for the database container | `<choose a password>` |
+
+When you run the app on your own machine (outside Docker), the host in `DATABASE_URL` is `localhost`. Inside docker compose it is `db`, the service name.
+
+## Database
+
+- **Engine:** PostgreSQL, running in the official `postgres` Docker image.
+- **Table:** `tasks` (`id serial primary key`, `title text`, `done boolean`). It is created automatically on startup if missing.
+- **Seed:** three example tasks are inserted only when the table is empty, so restarting never duplicates them.
+- **Persistence:** a named volume (`taskdata`) stores the data outside the container.
+- **Queries:** all queries use parameterized placeholders (`%s`), never string-glued SQL.
+
+```bash
+docker compose exec db psql -U postgres -d tasks
+```
+
+## API reference
+
+| Method | Path | Purpose | Success | Errors |
+|---|---|---|---|---|
+| GET | `/` | API info | 200 | |
+| GET | `/health` | Health check | 200 | |
+| GET | `/tasks` | List all tasks | 200 | |
+| GET | `/tasks/{id}` | Get one task | 200 | 404 |
+| POST | `/tasks` | Create a task | 201 | 400 |
+| PUT | `/tasks/{id}` | Update a task | 200 | 400, 404 |
+| DELETE | `/tasks/{id}` | Delete a task | 204 | 404 |
+
+Errors are returned as JSON, for example `{"error": "Task not found"}`.
+
+## Example request
+
+```
+$ curl -i http://localhost:8000/tasks/1
+
+C:\Users\ARSLAN>curl -i http://localhost:8000/tasks/1
+HTTP/1.1 200 OK
+date: Wed, 28 Oct 2026 12:21:13 GMT
+server: uvicorn
+content-length: 40
+content-type: application/json
+vary: Origin
+
+{"id":1,"title":"Buy milk","done":false}
+```
+
+### Data in the database
+
+![Tasks in Postgres](screenshots/postgres-data.png)
+
+The screenshot shows `\dt` and `SELECT * FROM tasks;` run inside the container.
+
