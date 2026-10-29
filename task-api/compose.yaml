@@ -4,12 +4,17 @@ services:
   ports: ["8000:8000"]
   environment:
     DATABASE_URL: postgres://postgres:dev@db:5432/tasks
-  depends_on: [db]
+    REDIS_URL: redis://redis:6379/0
+  depends_on: 
+      - db
+      - redis
  db:
   image: postgres
   environment:
     POSTGRES_PASSWORD: dev
     POSTGRES_DB: tasks
   volumes: [taskdata:/var/lib/postgresql]
+ redis:
+    image: redis:7-alpine
 volumes:
  taskdata:

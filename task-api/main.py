@@ -1,17 +1,26 @@
-from pickle import FALSE, TRUE
-from fastapi import FastAPI , HTTPException , Body , Response , Depends
+from fastapi import FastAPI , HTTPException , Body , Response , Depends , status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, field_validator
 import sqlite3
 import psycopg
 from psycopg.rows import dict_row
 from dotenv import load_dotenv
 import os
+import redis
+from contextlib import asynccontextmanager
 
-app = FastAPI(title="Task API" , version="1.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    ping_redis()
+    yield
+
+app = FastAPI(title="Task API" , version="1.0" , lifespan=lifespan)
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
+REDIS_URL = os.getenv("REDIS_URL")
 
 app.add_middleware(
     CORSMiddleware,
@@ -27,7 +36,7 @@ class task_val(BaseModel):
 
 def get_db():
     """Connect to database"""
-    conn = psycopg.connect(DATABASE_URL , row_factory=dict_row)
+    conn = psycopg.connect(DATABASE_URL , row_factory=dict_row , connect_timeout=5)
 
     try:
         yield conn
@@ -58,9 +67,28 @@ def init_db():
             print("Database seeded with 3 example")
         else:
             print("Table already has data. Skiping seeding.")
+# init_db()
 
 
-init_db()
+
+def ping_redis():
+    try:
+        r = redis.Redis.from_url(REDIS_URL, socket_connect_timeout=3)
+        r.ping()
+        print("Redis PING ok")
+    except redis.RedisError:
+        print("Redis PING failed")
+
+def ping_db() -> bool:
+    try:
+        with psycopg.connect(DATABASE_URL , connect_timeout=3) as conn:
+
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+                return cur.fetchone() is not None
+    except:
+        return False
+
 
 
 @app.get("/" , summary="API info" , description="Returns the name, version and main endpoints of this API.")
@@ -68,8 +96,12 @@ async def root():
     return { "name": "Task API", "version": "1.0", "endpoints": ["/tasks"] }
 
 @app.get("/health" , summary="Health check" , description="Returns status ok if the server is alive.")
-async def health():
-    return {"status":"ok"}
+def health():
+    if ping_db():
+        return {"status": "ok", "db": "ok"}
+
+    return JSONResponse(status_code=503, content={"status": "error", "db": "error"})
+         
 
 @app.get("/tasks" , summary="List all tasks" , description="Returns every task in the in-memory list.")
 def get_tasks(db:psycopg.Connection = Depends(get_db)):
@@ -146,28 +178,27 @@ def delete_task(id:int , db:psycopg.Connection = Depends(get_db)):
     return 
 
 # Extras
-
 @app.get("/search_tasks",summary="Search tasks using keyword")
-def search_tasks(search:str , db:sqlite3.Connection = Depends(get_db)):
+def search_tasks(search:str , db:psycopg.Connection = Depends(get_db)):
     cursor = db.cursor()
-    cursor.execute("SELECT * FROM tasks WHERE title LIKE ?" , (f"%{search}%",))
+    cursor.execute("SELECT * FROM tasks WHERE title LIKE %s" , (f"%{search}%",))
     searched_task = cursor.fetchall()
     if not searched_task:
         raise HTTPException(status_code=404 , detail="No tasks found matching the keyword")
     return searched_task
 
 @app.get("/filter_tasks" , summary="Filter Task")
-def get_filtered_tasks(done:int , db:sqlite3.Connection=Depends(get_db)):
+def get_filtered_tasks(done:bool , db:psycopg.Connection=Depends(get_db)):
 
     cursor = db.cursor()
-    cursor.execute("SELECT * from tasks where done = ?" , (done,))
+    cursor.execute("SELECT * from tasks where done = %s" , (done,))
     filtered_task = cursor.fetchall()
     if not filtered_task:
         raise HTTPException(status_code=404 , detail="No tasks exist")
     return filtered_task
 
 @app.get("/sort_tasks")
-def get_sorted_tasks(db:sqlite3.Connection=Depends(get_db)):
+def get_sorted_tasks(db:psycopg.Connection=Depends(get_db)):
     cursor = db.cursor()
     cursor.execute("SELECT * FROM tasks ORDER BY title")
     sorted_task = cursor.fetchall()
@@ -176,13 +207,25 @@ def get_sorted_tasks(db:sqlite3.Connection=Depends(get_db)):
     return sorted_task
 
 
-@app.get("/stats" , summary="Get statistics")
-def get_stats(db:sqlite3.Connection=Depends(get_db)):
-    cursor = db.cursor()
-    cursor.execute("SELECT COUNT(*) from tasks")
-    count = cursor.fetchone()[0]
+@app.get("/stats", summary="Get statistics")
+def get_stats(db: psycopg.Connection = Depends(get_db)):
+    with db.cursor() as cursor:
 
-    cursor.execute("SELECT COUNT(*) from tasks where done = 1")
-    done_count = cursor.fetchone()[0]
-    return { "total": count, "done": done_count, "open": count - done_count }
+        cursor.execute("""
+            SELECT count(*) from tasks
+        """)
+        total = cursor.fetchone()['count']
+        print(total)
+
+        cursor.execute("""
+            SELECT count(*) from tasks where done=true
+        """)
+        done = cursor.fetchone()['count']
+        
+    return {
+        "total": total,
+        "done": done,
+        "open": total - done
+    }
+
     

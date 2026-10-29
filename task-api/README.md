@@ -221,3 +221,5 @@ vary: Origin
 
 The screenshot shows `\dt` and `SELECT * FROM tasks;` run inside the container.
 
+## Why volumes exist
+Docker volumes exist to ensure data persistence. Without a volume, all database records are permanently lost when a container is destroyed. Attaching a volume safely isolates the data on the host machine, allowing it to persist across container restarts, updates, and recreations.
